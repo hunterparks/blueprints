@@ -1,0 +1,56 @@
+blueprint:
+  name: Aqara Mini Switch Actions
+  description: Handle press, double press, and hold events from an Aqara Mini Switch.
+  domain: automation
+  input:
+    button_id:
+      name: Button
+      description: Select the button that will be monitored for events.
+      selector:
+        entity:
+          domain: event
+    press_action:
+      name: Press Action
+      description: Action to perform on a press event.
+      default: []
+      selector:
+        action: {}
+    double_press_action:
+      name: Double Press Action
+      description: Action to perform on a double press event.
+      default: []
+      selector:
+        action: {}
+    hold_action:
+      name: Hold Action
+      description: Action to perform on a hold event.
+      default: []
+      selector:
+        action: {}
+variables:
+  event_type: "{{ trigger.to_state.attributes.event_type }}"
+trigger:
+  - platform: state
+    entity_id: !input button_id
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ event_type == 'multi_press_1' }}"
+        sequence: !input press_action
+
+      - conditions:
+          - condition: template
+            value_template: "{{ event_type == 'multi_press_2' }}"
+        sequence: !input double_press_action
+
+      - conditions:
+          - condition: template
+            value_template: "{{ event_type == 'long_press' }}"
+        sequence: !input hold_action
+
+      # Not currently used as it is triggered at the same time as long_press
+      # - conditions:
+      #     - condition: template
+      #       value_template: "{{ event_type == 'long_release' }}"
+      #   sequence: !input 
