@@ -1,0 +1,132 @@
+blueprint:
+  name: Power Monitoring Notifications
+  description: Manages device running status via power monitoring.
+  domain: automation
+  input:
+    power_sensor:
+      name: Device Power Monitor
+      description: Power sensor that will be monitored for the device.
+      selector:
+        entity:
+          domain: sensor
+          device_class: power
+    on_threshold:
+      name: On Threshold
+      description: Power draw above which the device is considered running.
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 5000
+          step: 0.1
+          unit_of_measurement: W
+          mode: box
+    on_duration:
+      name: On Threshold Duration
+      description: How long the power draw must stay above the on threshold.
+      default:
+        minutes: 1
+      selector:
+        duration: {}
+    off_threshold:
+      name: Off Threshold
+      description: Power draw below which the device is considered off.
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 5000
+          step: 0.1
+          unit_of_measurement: W
+          mode: box
+    off_duration:
+      name: Off Threshold Duration
+      description: How long the power draw must stay below the off threshold.
+      default:
+        minutes: 5
+      selector:
+        duration: {}
+    running_boolean:
+      name: Device Running Helper
+      description: Boolean that tracks whether the device is currently running.
+      selector:
+        entity:
+          domain: input_boolean
+    notification_boolean:
+      name: Notification Helper
+      description: Boolean that controls whether notifications are sent.
+      selector:
+        entity:
+          domain: input_boolean
+    notification_service:
+      name: Message Service
+      description: Notification service to call, e.g. notify.notify or notify.mobile_app_phone.
+      default: notify.notify
+      selector:
+        text:
+    on_notification_message:
+      name: Turned On Message
+      description: Message to send when the device starts running.
+      default: The device has started running.
+      selector:
+        text:
+          multiline: true
+    off_notification_message:
+      name: Turned Off Message
+      description: Message to send when the device finishes running.
+      default: The device has finished running.
+      selector:
+        text:
+          multiline: true
+mode: single
+trigger:
+  - platform: numeric_state
+    entity_id: !input power_sensor
+    above: !input on_threshold
+    for: !input on_duration
+    id: device_on
+
+  - platform: numeric_state
+    entity_id: !input power_sensor
+    below: !input off_threshold
+    for: !input off_duration
+    id: device_off
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: device_on
+          - condition: state
+            entity_id: !input running_boolean
+            state: "off"
+        sequence:
+          - service: input_boolean.turn_on
+            target:
+              entity_id: !input running_boolean
+
+          - condition: state
+            entity_id: !input notification_boolean
+            state: "on"
+
+          - service: !input notification_service
+            data:
+              message: !input on_notification_message
+
+      - conditions:
+          - condition: trigger
+            id: device_off
+          - condition: state
+            entity_id: !input running_boolean
+            state: "on"
+        sequence:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: !input running_boolean
+
+          - condition: state
+            entity_id: !input notification_boolean
+            state: "on"
+
+          - service: !input notification_service
+            data:
+              message: !input off_notification_message
