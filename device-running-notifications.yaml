@@ -1,0 +1,70 @@
+blueprint:
+  name: Device Running Notifications
+  description: Sends notifications when a device starts and stops running, based on a running binary sensor.
+  domain: automation
+  input:
+    running_sensor:
+      name: Device Running Sensor
+      description: Binary sensor that reports whether the device is running.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: running
+    notification_boolean:
+      name: Notification Helper
+      description: Boolean that controls whether notifications are sent.
+      selector:
+        entity:
+          domain: input_boolean
+    notification_service:
+      name: Message Service
+      description: Notification service to call, e.g. notify.notify or notify.mobile_app_phone.
+      default: notify.notify
+      selector:
+        text:
+    on_notification_message:
+      name: Turned On Message
+      description: Message to send when the device starts running.
+      default: The device has started running.
+      selector:
+        text:
+          multiline: true
+    off_notification_message:
+      name: Turned Off Message
+      description: Message to send when the device finishes running.
+      default: The device has finished running.
+      selector:
+        text:
+          multiline: true
+mode: queued
+trigger:
+  - platform: state
+    entity_id: !input running_sensor
+    to: "on"
+    id: device_on
+
+  - platform: state
+    entity_id: !input running_sensor
+    from: "on"
+    id: device_off
+condition:
+  - condition: state
+    entity_id: !input notification_boolean
+    state: "on"
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: device_on
+        sequence:
+          - service: !input notification_service
+            data:
+              message: !input on_notification_message
+
+      - conditions:
+          - condition: trigger
+            id: device_off
+        sequence:
+          - service: !input notification_service
+            data:
+              message: !input off_notification_message
