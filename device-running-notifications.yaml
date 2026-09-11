@@ -16,26 +16,16 @@ blueprint:
       selector:
         entity:
           domain: input_boolean
-    notification_service:
-      name: Message Service
-      description: Notification service to call, e.g. notify.notify or notify.mobile_app_phone.
-      default: notify.notify
+    on_action:
+      name: When Turned On
+      description: Notification to send when the device starts running, e.g. notify.pushover with a message.
       selector:
-        text:
-    on_notification_message:
-      name: Turned On Message
-      description: Message to send when the device starts running.
-      default: The device has started running.
+        action: {}
+    off_action:
+      name: When Turned Off
+      description: Notification to send when the device finishes running, e.g. notify.pushover with a message.
       selector:
-        text:
-          multiline: true
-    off_notification_message:
-      name: Turned Off Message
-      description: Message to send when the device finishes running.
-      default: The device has finished running.
-      selector:
-        text:
-          multiline: true
+        action: {}
 mode: queued
 trigger:
   - platform: state
@@ -56,15 +46,9 @@ action:
       - conditions:
           - condition: trigger
             id: device_on
-        sequence:
-          - service: !input notification_service
-            data:
-              message: !input on_notification_message
+        sequence: !input on_action
 
       - conditions:
           - condition: trigger
             id: device_off
-        sequence:
-          - service: !input notification_service
-            data:
-              message: !input off_notification_message
+        sequence: !input off_action
