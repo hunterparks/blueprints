@@ -30,12 +30,18 @@ mode: queued
 trigger:
   - platform: state
     entity_id: !input running_sensor
+    not_from:
+      - "unknown"
+      - "unavailable"
     to: "on"
     id: device_on
 
   - platform: state
     entity_id: !input running_sensor
     from: "on"
+    not_to:
+      - "unknown"
+      - "unavailable"
     id: device_off
 condition:
   - condition: state
